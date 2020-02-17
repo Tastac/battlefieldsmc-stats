@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Battlefields Stat's - By Tastac</title>
+
+    <style>
+      body{
+        background-color: #181a1b;
+      }
+
+      .centered{
+        margin-top:25%;
+        justify-content: center;
+      }
+
+      .statstext{
+        text-align: center;
+        color: #ffffff;
+      }
+
+      .username-form{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #titleheader{
+        font-size: 50px;
+        font-weight: bold;
+      }
+
+      #usernameinputbox{
+        width: 300px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      <div class="centered">
+        <h1 id="titleheader" class="statstext">BATTLEFIELDS STATS</h1>
+        <h4 style="margin-bottom: 100px;" class="statstext">By Tastac</h4>
+        <div class="username-form form-group">
+          <input type="text" id="usernameinputbox" class="form-control" placeholder="username" name="" value="">
+          <button style="margin-left: 10px;" type="submit" class="btn btn-success" onclick='loadStats("Tastac")'>Search</button>
+        </div>
+          <h4 class="statstext">Username: <span id="namestat">0</span></h4>
+          <h4 class="statstext">UUID: <span id="uuidstat">0</span></h4>
+          <h4 class="statstext">Kills: <span id="killstat">0</span></h4>
+          <h4 class="statstext">Wins: <span id="winstat">0</span></h4>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      function loadStats(){
+        var username = jQuery.trim(document.getElementById("usernameinputbox").value)
+        if(username != "" || username != null){
+          console.log(username)
+          var request = new XMLHttpRequest();
+          request.open('GET', 'https://cors-anywhere.herokuapp.com/https://api.mojang.com/users/profiles/minecraft/' + username, true);
+          request.onload = function() {
+            var data = JSON.parse(request.response);
+            var uuid = data.id;
+            if (this.status >= 200 && this.status < 400) { //Request Passes
+              document.getElementById("namestat").innerHTML = data.name;
+              document.getElementById("uuidstat").innerHTML = uuid;
+              setKills(uuid, "killstat", false);
+              setWins(uuid, "winstat", false);
+            }else{ //Request Failed
+              setKills(uuid, "killstat", true);
+              setWins(uuid, "winstat", true);
+            }
+          }
+          request.send()
+        }
+      }
+    </script>
+
+    <script id="set functions" type="text/javascript">
+      function setKills(uuid, elementid, uuidfailed){
+        console.log("Loading kills for " + uuid)
+        document.getElementById(elementid).innerHTML = "loading";
+        var request = new XMLHttpRequest();
+        request.open('GET', 'https://api.battlefieldsmc.net/api/?type=cubg_most_kills&uuid=' + uuid, true);
+        request.onload = function() {
+          var data = JSON.parse(request.response);
+          if (this.status >= 200 && this.status < 400 && uuidfailed != true) { //Request Passes
+            document.getElementById(elementid).innerHTML = data.detail[0].kills;
+          }else{ //Request Failed
+            document.getElementById(elementid).innerHTML = "error";
+          }
+        }
+        request.send()
+      }
+
+      function setWins(uuid, elementid, uuidfailed){
+        console.log("Loading wins for " + uuid)
+        document.getElementById(elementid).innerHTML = "loading";
+        var request = new XMLHttpRequest();
+        request.open('GET', 'https://api.battlefieldsmc.net/api/?type=cubg_most_wins&uuid=' + uuid, true);
+        request.onload = function() {
+          var data = JSON.parse(request.response);
+          if (this.status >= 200 && this.status < 400 && uuidfailed != true) { //Request Passes
+            document.getElementById(elementid).innerHTML = data.detail[0].wins;
+          }else{ //Request Failed
+            document.getElementById(elementid).innerHTML = "error";
+          }
+        }
+        request.send()
+      }
+    </script>
+  </body>
+</html>
