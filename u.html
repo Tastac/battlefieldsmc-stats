@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link href="css/style.css" rel="stylesheet">
+    <title>BF Record's - By Tastac</title>
+  </head>
+  <body>
+    <div id="navbarplaceholder"></div>
+
+    <div class="container">
+      <div class="content-box text-light row">
+        <div class="col-xs-3 "><img src="img/missingskin.png" alt="" id="headshot-statsbox"></div>
+        <div class="col-xs-9 stats">
+          <h2 id="playername">Loading</h2>
+          <ul>
+            <li><strong>Player Rank: </strong>#<span id="playerrank">Loading</span></li>
+            <li><strong>Kills: </strong><span id="killstat">Loading</span></li>
+            <li><strong>Wins: </strong><span id="winstat">Loading</span></li>
+            <li><strong>Overall Score: </strong><span id="playerscore">Loading</span></li>
+            <li><strong>Games Played: </strong><span id="gamesplayed">Loading</span></li>
+            <li><strong>Last Seen: </strong><span id="lastseen">Loading</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="js/functions.js"></script>
+    <script src="js/main.js"></script>
+    <script type="text/javascript">
+      let params = new URLSearchParams(document.location.search);
+      var playerSearchTerm = params.get("player");
+      var PlayerMap = JSON.parse(localStorage.getItem("playermap"));
+      console.log(PlayerMap)
+      if(playerSearchTerm != null){
+        var request = new XMLHttpRequest();
+        request.open('GET', 'https://api.allorigins.win/raw?url=https://api.ashcon.app/mojang/v2/user/' + playerSearchTerm, true)
+        request.onreadystatechange = function() {
+          if(request.readyState === XMLHttpRequest.DONE && request.status === 200){
+            if(request.response === ""){playerNonExistant()}
+            var data = JSON.parse(request.response);
+
+            uuid = data.uuid.replace(/-/g, "");
+            username = data.username;
+
+            //RUN STUFF
+
+            PlayerMap.sort(function(a, b) {
+              return b.score - a.score;
+            });
+
+            var PlayerMapID;
+            var CurPlayer;
+            for(var i in PlayerMap){
+              if(PlayerMap[i].uuid === uuid.replace("-", "")){
+                PlayerMapID = i;
+                CurPlayer = PlayerMap[i];
+              }
+            }
+
+            $("#playername").text(username);
+            $("#headshot-statsbox").attr("src", ("https://minotar.net/armor/body/" + uuid));
+            $("#playerrank").text(parseInt(PlayerMapID) + 1);
+            $("#killstat").text(CurPlayer.kills);
+            $("#winstat").text(CurPlayer.wins);
+            $("#playerscore").text(CurPlayer.score);
+            $("#lastseen").text(CurPlayer.lastseen);
+            $("#gamesplayed").text(CurPlayer.matches.length);
+
+          }
+        }
+        request.send()
+      }else{
+        //If no username or UUID input was made : ERROR
+        playerNonExistant()
+      }
+
+      function fillStats(uuidIn, usernameIn){
+        document.getElementById("playername").innerHTML = usernameIn;
+        document.getElementById("headshot-statsbox").src = "https://minotar.net/armor/body/" + uuidIn;
+        gamesPlayed(uuidIn)
+        setElementBySearchID("cubg_most_kills", "uuid", uuidIn, "kills", "killstat")
+        setElementBySearchID("cubg_most_wins", "uuid", uuidIn, "wins", "winstat")
+        setElementBySearchID("cubg_players", "uuid", uuidIn, "last_seen", "lastseen")
+      }
+
+      function playerNonExistant(){
+        document.getElementById("playername").innerHTML = "No Data";
+        document.getElementById("killstat").innerHTML = "No Data"
+        document.getElementById("winstat").innerHTML = "No Data"
+        document.getElementById("gamesplayed").innerHTML = "No Data"
+        document.getElementById("lastseen").innerHTML = "No Data"
+      }
+
+      function gamesPlayed(uuidIn){
+        var playerid = 1;
+        var numofgames = 0;
+        var rqt = new XMLHttpRequest();
+        var rqt2 = new XMLHttpRequest();
+        rqt.open('GET', 'https://api.battlefieldsmc.net/api/?type=cubg_participants', true);
+        rqt2.open('GET', 'https://api.battlefieldsmc.net/api/?type=cubg_players&uuid=' + uuidIn, true);
+
+        //Get Player ID
+        rqt2.onreadystatechange = function() {
+          if(rqt2.readyState === XMLHttpRequest.DONE && rqt2.status === 200){
+            var data2 = JSON.parse(rqt2.response);
+            playerid = data2.detail[0].id;
+            setTimeout(() => { rqt.send(); }, 1000);
+          }
+        }
+
+        //Get Matches
+        rqt.onreadystatechange = function() {
+          if(rqt.readyState === XMLHttpRequest.DONE && rqt.status === 200){
+            var data = JSON.parse(rqt.response);
+            for(var i in data.detail){
+              if(data.detail[i].player_id === playerid){
+                numofgames++;
+              }
+            }
+            document.getElementById("gamesplayed").innerHTML = numofgames;
+          }
+        }
+
+        rqt2.send();
+      }
+    </script>
+  </body>
+</html>
